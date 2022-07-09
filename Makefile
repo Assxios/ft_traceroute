@@ -6,7 +6,9 @@ SOURCES			=	main.c
 OBJECT_FOLDER	=	./obj
 OBJECTS			=	$(SOURCES:%.c=$(OBJECT_FOLDER)/%.o)
 
-COMPILER		=	gcc -Wall -Wextra -Werror -g3
+COMPILER		=	gcc
+# COMPILER		+=	-Wall -Wextra -Werror
+# COMPILER		+=	-g3
 
 FLAGS			=	google.com
 
