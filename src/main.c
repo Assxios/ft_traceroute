@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/icmp6.h>
+#include <netinet/udp.h>
 #include <sys/time.h>
 
 struct sockaddr server_addr = {0};
@@ -27,9 +31,47 @@ int get_addr(char *host, struct sockaddr *addr)
 
 struct pkt_format
 {
-	unsigned int id;
+	int id;
 	unsigned int seq;
 };
+
+int packet_ok(char *packet, unsigned int seq)
+{
+	struct icmphdr *icmp = (struct icmphdr *)(server_addr.sa_family == AF_INET ? packet + sizeof(struct iphdr) : packet);
+	struct pkt_format *pkt;
+	if (server_addr.sa_family == AF_INET)
+	{
+		if (!(icmp->type == ICMP_TIME_EXCEEDED && icmp->code == ICMP6_TIME_EXCEED_TRANSIT))
+			return 0;
+
+		if (icmp->type != ICMP_DEST_UNREACH)
+			return icmp->code + 1;
+
+		struct iphdr *ip = (struct iphdr *)(icmp + 1);
+		struct udphdr *udp = (struct udphdr *)(ip + 1);
+		pkt = (struct pkt_format *)(udp + 1);
+	}
+	else
+	{
+		if (!(icmp->type == ICMP6_TIME_EXCEEDED && icmp->code == ICMP6_TIME_EXCEED_TRANSIT) && icmp->type != ICMP6_DST_UNREACH)
+			return 0;
+
+		struct ip6_hdr *ip = (struct ip6_hdr *)(icmp + 1);
+		if (ip->ip6_nxt != IPPROTO_UDP)
+			return 0;
+		struct udphdr *udp = (struct udphdr *)(ip + 1);
+
+		pkt = (struct pkt_format *)(udp + 1);
+	}
+
+	if (pkt->id != getpid() || pkt->seq != seq)
+		return 0;
+
+	if (server_addr.sa_family == AF_INET)
+		return -1;
+	else
+		return icmp->type == ICMP6_DST_UNREACH ? icmp->code + 1 : -1;
+}
 
 int main(int argc, char **argv)
 {
@@ -82,10 +124,10 @@ int main(int argc, char **argv)
 	for (unsigned int ttl = 1; ttl <= max_ttl && !got_reply; ttl++)
 	{
 		if (server_addr.sa_family == AF_INET)
-			setsockopt(send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+			setsockopt(send_sock, SOL_IP, IP_TTL, &ttl, sizeof(ttl));
 		else
 			setsockopt(send_sock, SOL_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl));
-		printf("%d ", ttl);
+		printf("%2d ", ttl);
 
 		struct sockaddr_storage from = {0};
 
@@ -108,34 +150,54 @@ int main(int argc, char **argv)
 			struct iovec iov = {.iov_base = packet, .iov_len = sizeof(packet)};
 			struct msghdr msg = {.msg_name = &addr, .msg_namelen = sizeof(addr), .msg_iov = &iov, .msg_iovlen = 1, .msg_control = ctrl, .msg_controllen = sizeof(ctrl)};
 
-			if (recvmsg(recv_sock, &msg, 0) < 0)
+			while (1)
 			{
-				printf(" *");
-				continue;
-			}
-			gettimeofday(&end, NULL);
+				if (recvmsg(recv_sock, &msg, 0) < 0)
+				{
+					printf(" *");
+					break;
+				}
+				gettimeofday(&end, NULL);
 
-			if (server_addr.sa_family == AF_INET)
-				memcpy(&addr, &((struct ip *)packet)->ip_src, sizeof(struct in_addr));
-			else
-				for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg))
-					if (cmsg->cmsg_level == SOL_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO)
-						memcpy(&addr, CMSG_DATA(cmsg), sizeof(addr));
+				int code = packet_ok(packet, seq);
+				if (code == 0)
+					continue;
 
-			if (memcmp(&addr, &from, sizeof(addr)) != 0)
-			{
-				char ip_str[INET6_ADDRSTRLEN];
 				if (server_addr.sa_family == AF_INET)
-					inet_ntop(AF_INET, &((struct sockaddr_in *)&addr)->sin_addr, ip_str, INET_ADDRSTRLEN);
+					memcpy(&addr, &((struct iphdr *)packet)->saddr, sizeof(struct in_addr));
 				else
-					inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr, ip_str, INET6_ADDRSTRLEN);
+					for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg))
+						if (cmsg->cmsg_level == SOL_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO)
+							memcpy(&addr, CMSG_DATA(cmsg), sizeof(struct in6_addr *));
 
-				struct hostent *host = gethostbyaddr(&addr, server_addr.sa_family == AF_INET ? sizeof(struct in_addr) : sizeof(struct in6_addr), server_addr.sa_family);
-				printf(" %s (%s)", host ? host->h_name : ip_str, ip_str);
+				if (memcmp(&addr, &from, sizeof(addr)) != 0)
+				{
+					char ip_str[INET6_ADDRSTRLEN];
+					struct hostent *host;
+					if (server_addr.sa_family == AF_INET)
+					{
+						struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+						inet_ntop(AF_INET, &sin->sin_addr, ip_str, INET_ADDRSTRLEN);
+						host = gethostbyaddr((char *)&sin->sin_addr, sizeof(struct in_addr), AF_INET);
+					}
+					else
+					{
+						struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addr;
+						inet_ntop(AF_INET6, &sin6->sin6_addr, ip_str, INET6_ADDRSTRLEN);
+						host = gethostbyaddr((char *)&sin6->sin6_addr, sizeof(struct in6_addr), AF_INET6);
+					}
+					printf(" %s (%s)", host ? host->h_name : ip_str, ip_str);
 
-				memcpy(&from, &addr, sizeof(from));
+					memcpy(&from, &addr, sizeof(from));
+				}
+				printf(" %.3f ms", (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0);
+
+				if (server_addr.sa_family == AF_INET && code - 1 == ICMP_PORT_UNREACH)
+					got_reply++;
+				else if (server_addr.sa_family == AF_INET6 && code - 1 == ICMP6_DST_UNREACH_NOPORT)
+					got_reply++;
+				break;
 			}
-			printf(" %.3f ms", (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0);
 		}
 		printf("\n");
 	}
