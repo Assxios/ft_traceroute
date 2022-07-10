@@ -41,11 +41,11 @@ int packet_ok(char *packet, unsigned int seq)
 	struct pkt_format *pkt;
 	if (server_addr.sa_family == AF_INET)
 	{
+		if (icmp->type == ICMP_DEST_UNREACH)
+			return icmp->code + 1;
+
 		if (!(icmp->type == ICMP_TIME_EXCEEDED && icmp->code == ICMP6_TIME_EXCEED_TRANSIT))
 			return 0;
-
-		if (icmp->type != ICMP_DEST_UNREACH)
-			return icmp->code + 1;
 
 		struct iphdr *ip = (struct iphdr *)(icmp + 1);
 		struct udphdr *udp = (struct udphdr *)(ip + 1);
