@@ -1,14 +1,22 @@
 NAME			=	ft_traceroute
 
 SOURCE_FOLDER	=	./src
-SOURCES			=	main.c
+SOURCES			=	main.c \
+					args.c \
+					network.c \
+					icmp.c
 
 OBJECT_FOLDER	=	./obj
 OBJECTS			=	$(SOURCES:%.c=$(OBJECT_FOLDER)/%.o)
 
+INCLUDE_FOLDER	=	./include
+INCLUDES		=	types.h
+
 COMPILER		=	gcc
-COMPILER		+=	-Wall -Wextra -Werror
-COMPILER		+=	-g3
+
+COMPILER_FLAGS	=	-I$(INCLUDE_FOLDER)
+COMPILER_FLAGS	+=	-Wall -Wextra -Werror
+COMPILER_FLAGS	+=	-g3
 
 FLAGS			=	google.com
 
@@ -17,8 +25,8 @@ all: $(NAME)
 $(OBJECT_FOLDER):
 	mkdir -p $@
 
-$(OBJECT_FOLDER)/%.o: $(SOURCE_FOLDER)/%.c
-	$(COMPILER) -c $< -o $@
+$(OBJECT_FOLDER)/%.o: $(SOURCE_FOLDER)/%.c $(INCLUDES:%.h=$(INCLUDE_FOLDER)/%.h)
+	$(COMPILER) $(COMPILER_FLAGS) -c $< -o $@
 
 $(NAME): $(OBJECT_FOLDER) $(OBJECTS)
 	$(COMPILER) -o $@ $(OBJECTS)
