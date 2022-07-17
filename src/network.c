@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include <netdb.h>
-#include <sys/socket.h>
 
 int resolve_addr(char *host, struct sockaddr *addr)
 {

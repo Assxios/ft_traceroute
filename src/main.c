@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include <netinet/in.h>
 #include <sys/time.h>
+
+#include <netinet/in.h>
 
 #include "types.h"
 #include "functions.h"
