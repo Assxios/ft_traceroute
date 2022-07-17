@@ -1,12 +1,14 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <sys/socket.h>
+#include <netinet/in.h>
 
 typedef struct
 {
 	unsigned int max_ttl;
 	unsigned char nprobes;
+
+	int family;
 } t_options;
 
 typedef union
@@ -19,14 +21,16 @@ typedef union
 
 typedef struct
 {
+	char *cmd;
 	t_addr server_addr;
+	unsigned short port;
 
 	int send_sock;
 	int recv_sock;
 
-	unsigned short port;
-
 	t_options options;
 } t_data;
+
+extern t_data g_data;
 
 #endif

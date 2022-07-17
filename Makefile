@@ -4,7 +4,8 @@ SOURCE_FOLDER	=	./src
 SOURCES			=	main.c \
 					args.c \
 					network.c \
-					icmp.c
+					icmp.c \
+					utils.c
 
 OBJECT_FOLDER	=	./obj
 OBJECTS			=	$(SOURCES:%.c=$(OBJECT_FOLDER)/%.o)
@@ -15,7 +16,7 @@ INCLUDES		=	types.h
 COMPILER		=	gcc
 
 COMPILER_FLAGS	=	-I$(INCLUDE_FOLDER)
-COMPILER_FLAGS	+=	-Wall -Wextra -Werror
+COMPILER_FLAGS	+=	-Wall -Wextra -Werror -Wno-implicit-fallthrough
 COMPILER_FLAGS	+=	-g3
 
 FLAGS			=	google.com

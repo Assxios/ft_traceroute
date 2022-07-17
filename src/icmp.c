@@ -8,6 +8,8 @@
 #include <netinet/icmp6.h>
 #include <netinet/udp.h>
 
+#include "types.h"
+
 void update_addr(struct sockaddr_storage *dst, struct sockaddr_storage *src, int family)
 {
 	char ip_str[INET6_ADDRSTRLEN];
@@ -30,12 +32,12 @@ void update_addr(struct sockaddr_storage *dst, struct sockaddr_storage *src, int
 	memcpy(dst, src, sizeof(*src));
 }
 
-int check_packet(char *data, int family, unsigned short port)
+int check_packet(char *data)
 {
 	struct icmphdr *icmp;
 	struct udphdr *udp;
 
-	if (family == AF_INET)
+	if (g_data.server_addr.sa.sa_family == AF_INET)
 	{
 		icmp = (struct icmphdr *)(data + sizeof(struct iphdr));
 		struct iphdr *ip = (struct iphdr *)(icmp + 1);
@@ -54,7 +56,7 @@ int check_packet(char *data, int family, unsigned short port)
 			return -1;
 	}
 
-	if (ntohs(udp->uh_dport) != port)
+	if (ntohs(udp->uh_dport) != g_data.port)
 		return -1;
 
 	static unsigned short source_port = 0;
@@ -63,7 +65,7 @@ int check_packet(char *data, int family, unsigned short port)
 	if (ntohs(udp->uh_sport) != source_port)
 		return -1;
 
-	if (family == AF_INET)
+	if (g_data.server_addr.sa.sa_family == AF_INET)
 	{
 		if (icmp->type == ICMP_UNREACH || icmp->code == ICMP_UNREACH_PORT)
 			return 1;
@@ -80,10 +82,10 @@ int check_packet(char *data, int family, unsigned short port)
 	return -1;
 }
 
-int recv_packet(int socket, int family, unsigned short port, struct sockaddr_storage *from, struct timeval last)
+int recv_packet(struct sockaddr_storage *from, struct timeval last)
 {
 	size_t size = sizeof(struct icmphdr) + sizeof(struct udphdr);
-	if (family == AF_INET)
+	if (g_data.server_addr.sa.sa_family == AF_INET)
 		size += sizeof(struct iphdr) * 2;
 	else
 		size += sizeof(struct ip6_hdr);
@@ -95,7 +97,7 @@ int recv_packet(int socket, int family, unsigned short port, struct sockaddr_sto
 	char ctrl[sizeof(struct in6_pktinfo *)];
 	struct msghdr msg = {.msg_name = &addr, .msg_namelen = sizeof(addr), .msg_iov = &iov, .msg_iovlen = 1, .msg_control = ctrl, .msg_controllen = sizeof(ctrl)};
 
-	if (recvmsg(socket, &msg, 0) < 0)
+	if (recvmsg(g_data.recv_sock, &msg, 0) < 0)
 	{
 		printf(" *");
 		return 0;
@@ -104,11 +106,11 @@ int recv_packet(int socket, int family, unsigned short port, struct sockaddr_sto
 	struct timeval time;
 	gettimeofday(&time, NULL);
 
-	int ret = check_packet(packet, family, port);
+	int ret = check_packet(packet);
 	if (ret < 0)
 		return ret;
 
-	if (family == AF_INET)
+	if (g_data.server_addr.sa.sa_family == AF_INET)
 		memcpy(&addr, &((struct iphdr *)packet)->saddr, sizeof(struct in_addr));
 	else
 		for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg))
@@ -116,7 +118,7 @@ int recv_packet(int socket, int family, unsigned short port, struct sockaddr_sto
 				memcpy(&addr, CMSG_DATA(cmsg), sizeof(struct in6_addr *));
 
 	if (memcmp(&addr, from, sizeof(addr)) != 0)
-		update_addr(from, &addr, family);
+		update_addr(from, &addr, g_data.server_addr.sa.sa_family);
 
 	printf(" %.3f ms", (time.tv_sec - last.tv_sec) * 1000.0 + (time.tv_usec - last.tv_usec) / 1000.0);
 	return ret;

@@ -1,12 +1,15 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-void check_args(int argc, char **argv);
-void resolve_flags(char **argv, struct sockaddr_storage *server_addr, t_options *options);
+#include "types.h"
 
-int resolve_addr(char *host, struct sockaddr_storage *addr);
-void generate_socket(int family, int *send_sock, int *recv_sock);
-void update_ttl(int socket, int family, unsigned int ttl);
+void resolve_flags(char **argv);
 
-int recv_packet(int socket, int family, unsigned short port, struct sockaddr_storage *from, struct timeval last);
+int resolve_addr(char *host);
+void generate_socket();
+void update_ttl(unsigned int ttl);
+
+int recv_packet(struct sockaddr_storage *from, struct timeval last);
+
+void error(char *msg, char *detail);
 #endif
