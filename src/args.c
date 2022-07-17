@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
-#include <stdbool.h>
+#include <netinet/ip.h>
 
 #include "functions.h"
 
@@ -19,7 +19,7 @@ int is_digit(char *str)
 	return !*str;
 }
 
-size_t get_number(char ***av, size_t max)
+size_t get_number(char ***av, size_t min, size_t max)
 {
 	if (*(**av + 1) != '\0')
 	{
@@ -33,7 +33,7 @@ size_t get_number(char ***av, size_t max)
 		while (***av >= '0' && ***av <= '9')
 			nbr = nbr * 10 + *(**av)++ - '0';
 
-	if (nbr == 0 || nbr > max)
+	if (nbr < min || nbr > max)
 		error("usage error", "Value out of range");
 	return nbr;
 }
@@ -51,6 +51,12 @@ void options(char ***av)
 		case '6':
 			g_data.options.family = AF_INET6;
 			break;
+		case 'd':
+			g_data.options.debug = true;
+			break;
+		case 'f':
+			g_data.options.first_ttl = get_number(av, 1, IPDEFTTL);
+			return;
 		case '-':
 			if (strcmp(**av, "-help") == 0)
 				usage();

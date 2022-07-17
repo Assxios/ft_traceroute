@@ -33,6 +33,10 @@ void generate_socket()
 	int on = 1;
 	if (g_data.server_addr.sa.sa_family != AF_INET && setsockopt(g_data.recv_sock, SOL_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) < 0)
 		error("setsockopt", strerror(errno));
+
+	if (g_data.options.debug && (setsockopt(g_data.send_sock, SOL_SOCKET, SO_DEBUG, &on, sizeof(on)) < 0 ||
+								 setsockopt(g_data.recv_sock, SOL_SOCKET, SO_DEBUG, &on, sizeof(on)) < 0))
+		error("setsockopt", strerror(errno));
 }
 
 void update_ttl(unsigned int ttl)

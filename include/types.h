@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdbool.h>
 #include <netinet/in.h>
 
 typedef struct
@@ -9,6 +10,8 @@ typedef struct
 	unsigned char nprobes;
 
 	int family;
+	bool debug;
+	unsigned int first_ttl;
 } t_options;
 
 typedef union

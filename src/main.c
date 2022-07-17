@@ -4,7 +4,7 @@
 
 #include "functions.h"
 
-t_data g_data = {.port = 33434, .options = {.max_ttl = 30, .nprobes = 3, .family = AF_INET}};
+t_data g_data = {.port = 33434, .options = {.max_ttl = 30, .nprobes = 3, .family = AF_INET, .first_ttl = 1}};
 
 int main(int argc, char **argv)
 {
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 	resolve_flags(argv);
 	generate_socket();
 
-	for (unsigned int ttl = 1; ttl <= g_data.options.max_ttl; ttl++)
+	for (unsigned int ttl = g_data.options.first_ttl; ttl <= g_data.options.max_ttl; ttl++)
 	{
 		update_ttl(ttl);
 		printf("%2d ", ttl);
