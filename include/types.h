@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 #include <netinet/in.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/icmp6.h>
+
 
 typedef struct
 {
@@ -11,6 +14,7 @@ typedef struct
 
 	int family;
 	bool debug;
+	bool icmp;
 	unsigned int first_ttl;
 } t_options;
 
@@ -32,6 +36,7 @@ typedef struct
 	int recv_sock;
 
 	t_options options;
+	struct icmphdr icmp;
 } t_data;
 
 extern t_data g_data;

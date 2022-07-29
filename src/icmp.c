@@ -15,21 +15,23 @@ void update_addr(struct sockaddr_storage *dst, struct sockaddr_storage *src, int
 	char ip_str[INET6_ADDRSTRLEN];
 	struct hostent *host;
 
-	if (family == AF_INET)
-	{
-		struct sockaddr_in *sin = (struct sockaddr_in *)src;
-		inet_ntop(AF_INET, &sin->sin_addr, ip_str, INET_ADDRSTRLEN);
-		host = gethostbyaddr((char *)&sin->sin_addr, sizeof(struct in_addr), AF_INET);
-	}
-	else
-	{
-		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)src;
-		inet_ntop(AF_INET6, &sin6->sin6_addr, ip_str, INET6_ADDRSTRLEN);
-		host = gethostbyaddr((char *)&sin6->sin6_addr, sizeof(struct in6_addr), AF_INET6);
-	}
+	family == AF_INET ? inet_ntop(AF_INET, &((struct sockaddr_in *)src)->sin_addr, ip_str, INET_ADDRSTRLEN) : inet_ntop(AF_INET6, &((struct sockaddr_in6 *)src)->sin6_addr, ip_str, INET6_ADDRSTRLEN);
+	host = family == AF_INET ? gethostbyaddr((char *)&((struct sockaddr_in *)src)->sin_addr, sizeof(struct in_addr), AF_INET) : gethostbyaddr((char *)&((struct sockaddr_in6 *)src)->sin6_addr, sizeof(struct in6_addr), AF_INET6);
 	printf(" %s (%s)", host ? host->h_name : ip_str, ip_str);
 
 	memcpy(dst, src, sizeof(*src));
+}
+
+int check_packet_icmp(char *data)
+{
+	struct icmphdr *icmp = g_data.server_addr.sa.sa_family == AF_INET ? (struct icmphdr *)(data + sizeof(struct iphdr)) : (struct icmphdr *)data;
+
+	if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP6_TIME_EXCEEDED) 
+		return 0;
+	else if (icmp->type == ICMP_ECHOREPLY || icmp->type == ICMP6_ECHO_REPLY)
+		return 1;
+	else
+		return -1;
 }
 
 int check_packet(char *data)
@@ -65,30 +67,17 @@ int check_packet(char *data)
 	if (ntohs(udp->uh_sport) != source_port)
 		return -1;
 
-	if (g_data.server_addr.sa.sa_family == AF_INET)
-	{
-		if (icmp->type == ICMP_UNREACH || icmp->code == ICMP_UNREACH_PORT)
-			return 1;
-		if (icmp->type == ICMP_TIME_EXCEEDED && icmp->code == ICMP_EXC_TTL)
-			return 0;
-	}
-	else
-	{
-		if (icmp->type == ICMP6_DST_UNREACH || icmp->code == ICMP6_DST_UNREACH_NOPORT)
-			return 1;
-		if (icmp->type == ICMP6_TIME_EXCEEDED && icmp->code == ICMP6_TIME_EXCEED_TRANSIT)
-			return 0;
-	}
+	if (icmp->type == ICMP_UNREACH || icmp->code == ICMP_UNREACH_PORT || icmp->type == ICMP6_DST_UNREACH || icmp->code == ICMP6_DST_UNREACH_NOPORT)
+		return 1;
+	if ((icmp->type == ICMP_TIME_EXCEEDED && icmp->code == ICMP_EXC_TTL) || (icmp->type == ICMP6_TIME_EXCEEDED && icmp->code == ICMP6_TIME_EXCEED_TRANSIT))
+		return 0;
 	return -1;
 }
 
 int recv_packet(struct sockaddr_storage *from, struct timeval last)
 {
 	size_t size = sizeof(struct icmphdr) + sizeof(struct udphdr);
-	if (g_data.server_addr.sa.sa_family == AF_INET)
-		size += sizeof(struct iphdr) * 2;
-	else
-		size += sizeof(struct ip6_hdr);
+	g_data.server_addr.sa.sa_family == AF_INET ? (size += sizeof(struct iphdr) * 2) : (size += sizeof(struct ip6_hdr));
 
 	char packet[size];
 	struct iovec iov = {.iov_base = packet, .iov_len = sizeof(packet)};
@@ -106,7 +95,11 @@ int recv_packet(struct sockaddr_storage *from, struct timeval last)
 	struct timeval time;
 	gettimeofday(&time, NULL);
 
-	int ret = check_packet(packet);
+	int ret;
+	if (g_data.options.icmp == false)
+		ret = check_packet(packet);
+	else
+		ret = check_packet_icmp(packet);
 	if (ret < 0)
 		return ret;
 

@@ -1,8 +1,8 @@
 NAME			=	ft_traceroute
 
 SOURCE_FOLDER	=	./src
-SOURCES			=	main.c \
-					args.c \
+SOURCES			=	ft_traceroute.c \
+					parse.c \
 					network.c \
 					icmp.c \
 					utils.c
