@@ -7,7 +7,6 @@
 #include <netinet/icmp6.h>
 
 #define DEFAULT_PACKET_SIZE 28
-
 typedef struct
 {
 	int family;
