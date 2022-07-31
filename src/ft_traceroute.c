@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <limits.h>
 
 #include "functions.h"
 
-t_data g_data = {.port = 33434, .options = {.max_ttl = 30, .nprobes = 3, .family = AF_INET, .first_ttl = 1}};
+t_data g_data = {.port = 33434, .options = {.max_ttl = 30, .nprobes = 3, .family = AF_INET, .first_ttl = 1, .packetlen = 0}};
 
 int main(int argc, char **argv)
 {
@@ -19,6 +20,9 @@ int main(int argc, char **argv)
 		g_data.icmp.type = g_data.server_addr.sa.sa_family == AF_INET ? ICMP_ECHO : ICMP6_ECHO_REQUEST;
 		g_data.icmp.checksum = checksum((void *)&g_data.icmp, sizeof(struct icmphdr));
 	}
+	char buffer[USHRT_MAX];
+	for (int i = 0; i != (g_data.options.packetlen - DEFAULT_PACKET_SIZE); i++)
+		buffer[i] = 66;
 
 	for (unsigned int ttl = g_data.options.first_ttl; ttl <= g_data.options.max_ttl && !got_reply; ttl++)
 	{
@@ -26,14 +30,13 @@ int main(int argc, char **argv)
 		printf("%2d ", ttl);
 
 		struct sockaddr_storage from = {0};
-		char buffer[60];
 
 		for (unsigned char probe = 0; probe < g_data.options.nprobes; probe++)
 		{
 			if (!g_data.options.icmp)
 			{
 				g_data.server_addr.sa.sa_family == AF_INET ? (g_data.server_addr.sin.sin_port = htons(++g_data.port)) : (g_data.server_addr.sin6.sin6_port = htons(++g_data.port));
-				sendto(g_data.send_sock, &buffer, sizeof(buffer), 0, &g_data.server_addr.sa, g_data.server_addr.sa.sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6));
+				sendto(g_data.send_sock, &buffer, g_data.options.packetlen < DEFAULT_PACKET_SIZE ? 0 : (g_data.options.packetlen - DEFAULT_PACKET_SIZE), 0, &g_data.server_addr.sa, g_data.server_addr.sa.sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6));
 			}
 			else
 			{

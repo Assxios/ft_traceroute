@@ -11,7 +11,7 @@
 void print_help()
 {
 	// usage
-	printf("Usage\n  %s [ -46dIn ] [ -f first_ttl ] [ -m max_ttl ] [ -p port ] [ -q nqueries ] host\n\n", g_data.cmd);
+	printf("Usage\n  %s [ -46dIn ] [ -f first_ttl ] [ -m max_ttl ] [ -q nqueries ] host\n\n", g_data.cmd);
 
 	// options
 	printf("Options:\n");
@@ -22,22 +22,22 @@ void print_help()
 	printf("  -I                          Use ICMP ECHO for tracerouting\n");
 	printf("  -m max_ttl                  Set the max number of hops (max TTL to be reached). Default is 30\n");
 	printf("  -n                          Do not resolve IP addresses to their domain names\n");
-	//printf("  -p port                     initial seq for "icmp" (incremented as well, default from 1)\n");
 	printf("  -q nqueries                 Set the number of probes per each hop. Default is 3\n");
 	printf("  --help                      Read this help and exit\n\n");
 	
 	// arguments
 	printf("Arguments:\n");
-	printf("+     host          The host to traceroute to\n\n");
+	printf("+     host          The host to traceroute to\n");
+	printf("      packetlen     The full packet length (default is the length of an header plus 40). Can be ignored or increased to a minimal allowed value\n\n");
 
 	//bg
 	printf("Made with ♥ by hallainea and Assxios\n");
 	exit(0);
 }
 
-size_t get_number(char ***av, size_t min, size_t max)
+size_t get_number(char ***av, size_t min, size_t max, bool option)
 {
-	if (*(**av + 1) != '\0')
+	if (option && *(**av + 1) != '\0')
 	{
 		char buffer[1 << 10];
 		sprintf(buffer, "Invalid option -%s", **av);
@@ -71,19 +71,19 @@ void options(char ***av)
 			g_data.options.debug = true;
 			break;
 		case 'f':
-			g_data.options.first_ttl = get_number(av, 1, g_data.options.max_ttl);
+			g_data.options.first_ttl = get_number(av, 1, g_data.options.max_ttl, true);
 			return;
 		case 'I':
 			g_data.options.icmp = true;
 			break;
 		case 'm':
-			g_data.options.max_ttl = get_number(av, 1, UCHAR_MAX);
+			g_data.options.max_ttl = get_number(av, 1, UCHAR_MAX, true);
 			return;
 		case 'n':
 			g_data.options.resolve = true;
 			break;
 		case 'q':
-			g_data.options.nprobes = get_number(av, 1, 10);
+			g_data.options.nprobes = get_number(av, 1, 10, true);
 			return;
 		case '-':
 			if (strcmp(**av, "-help") == 0)
@@ -109,10 +109,14 @@ void resolve_flags(char **argv)
 	if (resolve_addr(*argv) != 0)
 		error("usage error", "Temporary failure in name resolution");
 	if (*(argv + 1))
-		error("usage error", "Extranous argument found");
+	{
+		g_data.options.packetlen = get_number(&argv, 0, USHRT_MAX, false);
+		if (*(argv + 1))
+			error("usage error", "Extranous argument found");
+	}
 
 	char ip_str[INET6_ADDRSTRLEN];
 	g_data.server_addr.sa.sa_family == AF_INET ? inet_ntop(AF_INET, &g_data.server_addr.sin.sin_addr, ip_str, INET_ADDRSTRLEN) : inet_ntop(AF_INET6, &g_data.server_addr.sin6.sin6_addr, ip_str, INET6_ADDRSTRLEN);
-	printf("traceroute to %s (%s), %d hops max, %d byte packets\n", *argv, ip_str, g_data.options.max_ttl, 0);
+	printf("traceroute to %s (%s), %d hops max, %d byte packets\n", g_data.options.packetlen ? *(argv - 1) : *argv, ip_str, g_data.options.max_ttl, g_data.options.packetlen < DEFAULT_PACKET_SIZE ? DEFAULT_PACKET_SIZE : g_data.options.packetlen);
 
 }

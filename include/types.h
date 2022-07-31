@@ -6,6 +6,7 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/icmp6.h>
 
+#define DEFAULT_PACKET_SIZE 28
 typedef struct
 {
 	int family;
@@ -13,6 +14,7 @@ typedef struct
 	unsigned int first_ttl;
 	unsigned int max_ttl;
 	unsigned char nprobes;
+	unsigned char packetlen;
 
 	bool debug;
 	bool icmp;
