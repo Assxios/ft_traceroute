@@ -44,7 +44,7 @@ void generate_socket()
 	}
 }
 
-void update_ttl(unsigned int ttl)
+void update_ttl(unsigned char ttl)
 {
 	int ret;
 

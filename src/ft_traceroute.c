@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 		g_data.icmp.checksum = checksum((void *)&g_data.icmp, sizeof(struct icmphdr));
 	}
 
-	for (unsigned int ttl = g_data.options.first_ttl; ttl <= g_data.options.max_ttl && !got_reply; ttl++)
+	for (unsigned char ttl = g_data.options.first_ttl; ttl <= g_data.options.max_ttl && !got_reply; ttl++)
 	{
 		update_ttl(ttl);
 		printf("%2d ", ttl);

@@ -9,13 +9,14 @@
 
 typedef struct
 {
-	unsigned int max_ttl;
+	unsigned char max_ttl;
 	unsigned char nprobes;
 
 	int family;
 	bool debug;
 	bool icmp;
-	unsigned int first_ttl;
+	bool resolve;
+	unsigned char first_ttl;
 } t_options;
 
 typedef union

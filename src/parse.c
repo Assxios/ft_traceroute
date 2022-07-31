@@ -4,21 +4,22 @@
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "functions.h"
 
 void print_help()
 {
 	// usage
-	printf("Usage\n  %s [ -46dn ] [ -f first_ttl ] [ -m max_ttl ] [ -p port ] [ -q nqueries ] host\n\n", g_data.cmd);
+	printf("Usage\n  %s [ -46dIn ] [ -f first_ttl ] [ -m max_ttl ] [ -p port ] [ -q nqueries ] host\n\n", g_data.cmd);
 
 	// options
 	printf("Options:\n");
 	printf("  -4                          use IPv4\n");
 	printf("  -6                          use IPv6\n");
-	printf("  -d  --debug                 Enable socket level debugging\n");
+	printf("  -d                          Enable socket level debugging\n");
 	printf("  -f first_ttl                Start from the first_ttl hop (instead from 1)\n");
-	printf("  -I  --icmp                  Use ICMP ECHO for tracerouting\n");
+	printf("  -I                          Use ICMP ECHO for tracerouting\n");
 	printf("  -m max_ttl                  Set the max number of hops (max TTL to be reached). Default is 30\n");
 	printf("  -n                          Do not resolve IP addresses to their domain names\n");
 	//printf("  -p port                     initial seq for "icmp" (incremented as well, default from 1)\n");
@@ -53,23 +54,6 @@ size_t get_number(char ***av, size_t min, size_t max)
 	return nbr;
 }
 
-void options_long(char ***av)
-{
-	char buffer[1 << 10];
-
-	if (strcmp(**av, "-help") == 0)
-		print_help();
-	else if (strcmp(**av, "-icmp") == 0)
-		g_data.options.icmp = true;
-	else if (strcmp(**av, "-debug") == 0)
-		g_data.options.debug = true;
-	else
-	{
-		sprintf(buffer, "Invalid option -%s", **av);
-		error("usage error", buffer);
-	}
-}
-
 void options(char ***av)
 {
 	char buffer[1 << 10];
@@ -87,14 +71,23 @@ void options(char ***av)
 			g_data.options.debug = true;
 			break;
 		case 'f':
-			g_data.options.first_ttl = get_number(av, 1, IPDEFTTL);
+			g_data.options.first_ttl = get_number(av, 1, g_data.options.max_ttl);
 			return;
 		case 'I':
 			g_data.options.icmp = true;
 			break;
-		case '-':
-			options_long(av);
+		case 'm':
+			g_data.options.max_ttl = get_number(av, 1, UCHAR_MAX);
 			return;
+		case 'n':
+			g_data.options.resolve = true;
+			break;
+		case 'q':
+			g_data.options.nprobes = get_number(av, 1, 10);
+			return;
+		case '-':
+			if (strcmp(**av, "-help") == 0)
+				print_help();
 		default:
 			sprintf(buffer, "Invalid option -%s", **av);
 			error("usage error", buffer);

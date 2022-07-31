@@ -13,13 +13,18 @@
 void update_addr(struct sockaddr_storage *dst, struct sockaddr_storage *src, int family)
 {
 	char ip_str[INET6_ADDRSTRLEN];
-	struct hostent *host;
+	struct hostent *host = 0;
+	
+	memcpy(dst, src, sizeof(*src));
 
 	family == AF_INET ? inet_ntop(AF_INET, &((struct sockaddr_in *)src)->sin_addr, ip_str, INET_ADDRSTRLEN) : inet_ntop(AF_INET6, &((struct sockaddr_in6 *)src)->sin6_addr, ip_str, INET6_ADDRSTRLEN);
+	if (g_data.options.resolve)
+	{
+		printf(" %s", ip_str);
+		return;
+	}
 	host = family == AF_INET ? gethostbyaddr((char *)&((struct sockaddr_in *)src)->sin_addr, sizeof(struct in_addr), AF_INET) : gethostbyaddr((char *)&((struct sockaddr_in6 *)src)->sin6_addr, sizeof(struct in6_addr), AF_INET6);
 	printf(" %s (%s)", host ? host->h_name : ip_str, ip_str);
-
-	memcpy(dst, src, sizeof(*src));
 }
 
 int check_packet_icmp(char *data)
@@ -113,6 +118,6 @@ int recv_packet(struct sockaddr_storage *from, struct timeval last)
 	if (memcmp(&addr, from, sizeof(addr)) != 0)
 		update_addr(from, &addr, g_data.server_addr.sa.sa_family);
 
-	printf(" %.3f ms", (time.tv_sec - last.tv_sec) * 1000.0 + (time.tv_usec - last.tv_usec) / 1000.0);
+	printf("  %.3f ms", (time.tv_sec - last.tv_sec) * 1000.0 + (time.tv_usec - last.tv_usec) / 1000.0);
 	return ret;
 }
