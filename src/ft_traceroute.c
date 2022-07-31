@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 
 		for (unsigned char probe = 0; probe < g_data.options.nprobes; probe++)
 		{
-			if (g_data.options.icmp == false)
+			if (!g_data.options.icmp)
 			{
 				g_data.server_addr.sa.sa_family == AF_INET ? (g_data.server_addr.sin.sin_port = htons(++g_data.port)) : (g_data.server_addr.sin6.sin6_port = htons(++g_data.port));
 				sendto(g_data.send_sock, &buffer, sizeof(buffer), 0, &g_data.server_addr.sa, g_data.server_addr.sa.sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6));

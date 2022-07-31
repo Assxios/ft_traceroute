@@ -16,7 +16,7 @@ void print_help()
 	printf("Options:\n");
 	printf("  -4                          use IPv4\n");
 	printf("  -6                          use IPv6\n");
-	printf("  -d                          Enable socket level debugging\n");
+	printf("  -d  --debug                 Enable socket level debugging\n");
 	printf("  -f first_ttl                Start from the first_ttl hop (instead from 1)\n");
 	printf("  -I  --icmp                  Use ICMP ECHO for tracerouting\n");
 	printf("  -m max_ttl                  Set the max number of hops (max TTL to be reached). Default is 30\n");
@@ -55,10 +55,19 @@ size_t get_number(char ***av, size_t min, size_t max)
 
 void options_long(char ***av)
 {
+	char buffer[1 << 10];
+
 	if (strcmp(**av, "-help") == 0)
 		print_help();
-	if (strcmp(**av, "--icmp") == 0)
+	else if (strcmp(**av, "-icmp") == 0)
 		g_data.options.icmp = true;
+	else if (strcmp(**av, "-debug") == 0)
+		g_data.options.debug = true;
+	else
+	{
+		printf(buffer, "Invalid option -%s", **av);
+		error("usage error", buffer);
+	}
 }
 
 void options(char ***av)
@@ -85,8 +94,9 @@ void options(char ***av)
 			break;
 		case '-':
 			options_long(av);
+			return;
 		default:
-			sprintf(buffer, "Invalid option -%s", **av);
+			printf(buffer, "Invalid option -%s", **av);
 			error("usage error", buffer);
 		}
 }

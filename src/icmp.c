@@ -96,7 +96,7 @@ int recv_packet(struct sockaddr_storage *from, struct timeval last)
 	gettimeofday(&time, NULL);
 
 	int ret;
-	if (g_data.options.icmp == false)
+	if (!g_data.options.icmp)
 		ret = check_packet(packet);
 	else
 		ret = check_packet_icmp(packet);
