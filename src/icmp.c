@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -14,7 +15,7 @@ void update_addr(struct sockaddr_storage *dst, struct sockaddr_storage *src, int
 {
 	char ip_str[INET6_ADDRSTRLEN];
 	struct hostent *host = 0;
-	
+
 	memcpy(dst, src, sizeof(*src));
 
 	family == AF_INET ? inet_ntop(AF_INET, &((struct sockaddr_in *)src)->sin_addr, ip_str, INET_ADDRSTRLEN) : inet_ntop(AF_INET6, &((struct sockaddr_in6 *)src)->sin6_addr, ip_str, INET6_ADDRSTRLEN);
@@ -29,14 +30,41 @@ void update_addr(struct sockaddr_storage *dst, struct sockaddr_storage *src, int
 
 int check_packet_icmp(char *data)
 {
-	struct icmphdr *icmp = g_data.server_addr.sa.sa_family == AF_INET ? (struct icmphdr *)(data + sizeof(struct iphdr)) : (struct icmphdr *)data;
+	struct icmphdr *icmp = (struct icmphdr *)(g_data.server_addr.sa.sa_family == AF_INET ? data + sizeof(struct iphdr) : data);
 
-	if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP6_TIME_EXCEEDED) 
-		return 0;
-	else if (icmp->type == ICMP_ECHOREPLY || icmp->type == ICMP6_ECHO_REPLY)
-		return 1;
-	else
+	if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP6_TIME_EXCEEDED)
+	{
+		struct icmphdr *icmp_sent;
+
+		if (g_data.server_addr.sa.sa_family == AF_INET)
+		{
+			struct iphdr *ip = (struct iphdr *)(icmp + 1);
+			icmp_sent = (struct icmphdr *)(ip + 1);
+
+			if (ip->protocol != IPPROTO_ICMP)
+				return -1;
+		}
+		else
+		{
+			struct ip6_hdr *ip = (struct ip6_hdr *)(icmp + 1);
+			icmp_sent = (struct icmphdr *)(ip + 1);
+
+			if (ip->ip6_nxt != IPPROTO_ICMPV6)
+				return -1;
+		};
+		icmp->un.echo = icmp_sent->un.echo;
+	}
+
+	if (icmp->un.echo.id != g_data.icmp.un.echo.id)
 		return -1;
+	if (icmp->un.echo.sequence != g_data.icmp.un.echo.sequence)
+		return -1;
+
+	if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP6_TIME_EXCEEDED)
+		return 0;
+	if (icmp->type == ICMP_ECHOREPLY || icmp->type == ICMP6_ECHO_REPLY)
+		return 1;
+	return -1;
 }
 
 int check_packet(char *data)

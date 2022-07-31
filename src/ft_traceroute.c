@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "functions.h"
 
@@ -16,8 +17,9 @@ int main(int argc, char **argv)
 
 	if (g_data.options.icmp)
 	{
+		g_data.icmp.un.echo.id = getpid();
 		g_data.icmp.type = g_data.server_addr.sa.sa_family == AF_INET ? ICMP_ECHO : ICMP6_ECHO_REQUEST;
-		g_data.icmp.checksum = checksum((void *)&g_data.icmp, sizeof(struct icmphdr));
+		g_data.server_addr.sa.sa_family == AF_INET ? g_data.icmp.checksum = checksum((void *)&g_data.icmp, sizeof(struct icmphdr)) : 0;
 	}
 
 	for (unsigned int ttl = g_data.options.first_ttl; ttl <= g_data.options.max_ttl && !got_reply; ttl++)
@@ -37,9 +39,9 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				sendto(g_data.recv_sock, &g_data.icmp, sizeof(g_data.icmp), 0, &g_data.server_addr.sa, g_data.server_addr.sa.sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6));
 				g_data.icmp.un.echo.sequence++;
-				g_data.icmp.checksum--;
+				g_data.server_addr.sa.sa_family == AF_INET ? g_data.icmp.checksum-- : 0;
+				sendto(g_data.recv_sock, &g_data.icmp, sizeof(g_data.icmp), 0, &g_data.server_addr.sa, g_data.server_addr.sa.sa_family == AF_INET ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6));
 			}
 
 			struct timeval time;
