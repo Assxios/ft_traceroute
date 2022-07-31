@@ -65,7 +65,7 @@ void options_long(char ***av)
 		g_data.options.debug = true;
 	else
 	{
-		printf(buffer, "Invalid option -%s", **av);
+		sprintf(buffer, "Invalid option -%s", **av);
 		error("usage error", buffer);
 	}
 }
@@ -96,7 +96,7 @@ void options(char ***av)
 			options_long(av);
 			return;
 		default:
-			printf(buffer, "Invalid option -%s", **av);
+			sprintf(buffer, "Invalid option -%s", **av);
 			error("usage error", buffer);
 		}
 }
