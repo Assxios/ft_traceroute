@@ -72,7 +72,7 @@ int check_packet(char *data)
 	if (ntohs(udp->uh_sport) != source_port)
 		return -1;
 
-	if (icmp->type == ICMP_UNREACH || icmp->code == ICMP_UNREACH_PORT || icmp->type == ICMP6_DST_UNREACH || icmp->code == ICMP6_DST_UNREACH_NOPORT)
+	if ((icmp->type == ICMP_UNREACH && icmp->code == ICMP_UNREACH_PORT) || (icmp->type == ICMP6_DST_UNREACH && icmp->code == ICMP6_DST_UNREACH_NOPORT))
 		return 1;
 	if ((icmp->type == ICMP_TIME_EXCEEDED && icmp->code == ICMP_EXC_TTL) || (icmp->type == ICMP6_TIME_EXCEEDED && icmp->code == ICMP6_TIME_EXCEED_TRANSIT))
 		return 0;

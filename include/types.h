@@ -6,17 +6,17 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/icmp6.h>
 
-
 typedef struct
 {
-	unsigned char max_ttl;
+	int family;
+
+	unsigned int first_ttl;
+	unsigned int max_ttl;
 	unsigned char nprobes;
 
-	int family;
 	bool debug;
 	bool icmp;
 	bool resolve;
-	unsigned char first_ttl;
 } t_options;
 
 typedef union
