@@ -22,7 +22,13 @@ int main(int argc, char **argv)
 		g_data.icmp.un.echo.id = getpid();
 		g_data.icmp.type = g_data.server_addr.sa.sa_family == AF_INET ? ICMP_ECHO : ICMP6_ECHO_REQUEST;
 		g_data.icmp.un.echo.sequence = (g_data.options.port == 0) ? 0 : (g_data.port - 1);
-		g_data.server_addr.sa.sa_family == AF_INET ? g_data.icmp.checksum = (checksum((void *)&g_data.icmp, sizeof(struct icmphdr)) - g_data.icmp.un.echo.sequence) : 0;
+		if (g_data.server_addr.sa.sa_family == AF_INET)
+		{
+			if (checksum((unsigned short *)&g_data.icmp, sizeof(g_data.icmp)) < g_data.icmp.un.echo.sequence)
+				g_data.icmp.checksum = (checksum((void *)&g_data.icmp, sizeof(struct icmphdr)) - g_data.icmp.un.echo.sequence) - 1;
+			else
+				g_data.icmp.checksum = checksum((void *)&g_data.icmp, sizeof(struct icmphdr)) - g_data.icmp.un.echo.sequence;
+		}
 	}
 	char buffer[USHRT_MAX] = {0};
 	for (int i = 0; i < (g_data.options.packetlen - DEFAULT_PACKET_SIZE); i++)

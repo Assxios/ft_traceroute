@@ -41,17 +41,23 @@ void print_help()
 
 size_t get_number(char ***av, size_t min, size_t max, bool option)
 {
+	char buffer[1 << 10];
+
 	if (option && *(**av + 1) != '\0')
 	{
-		char buffer[1 << 10];
 		sprintf(buffer, "Invalid option -%s", **av);
 		error("usage error", buffer);
 	}
 
+	if (!*++*av || !is_digit(**av))
+	{
+		sprintf(buffer, "Invalid argument '%s'", **av);
+		error("usage error", buffer);
+	}
+
 	size_t nbr = 0;
-	if (*++*av && is_digit(**av))
-		while (***av >= '0' && ***av <= '9')
-			nbr = nbr * 10 + *(**av)++ - '0';
+	while (***av >= '0' && ***av <= '9')
+		nbr = nbr * 10 + *(**av)++ - '0';
 
 	if (nbr < min || nbr > max)
 		error("usage error", "Value out of range");
