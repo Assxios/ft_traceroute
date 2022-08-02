@@ -16,11 +16,13 @@ int main(int argc, char **argv)
 	resolve_flags(argv);
 	generate_socket();
 
+	g_data.port = (g_data.options.port == 0) ? 33434 : g_data.options.port;
 	if (g_data.options.icmp)
 	{
 		g_data.icmp.un.echo.id = getpid();
 		g_data.icmp.type = g_data.server_addr.sa.sa_family == AF_INET ? ICMP_ECHO : ICMP6_ECHO_REQUEST;
-		g_data.server_addr.sa.sa_family == AF_INET ? g_data.icmp.checksum = checksum((void *)&g_data.icmp, sizeof(struct icmphdr)) : 0;
+		g_data.icmp.un.echo.sequence = (g_data.options.port == 0) ? 0 : (g_data.port - 1);
+		g_data.server_addr.sa.sa_family == AF_INET ? g_data.icmp.checksum = (checksum((void *)&g_data.icmp, sizeof(struct icmphdr)) - g_data.icmp.un.echo.sequence) : 0;
 	}
 	char buffer[USHRT_MAX] = {0};
 	for (int i = 0; i < (g_data.options.packetlen - DEFAULT_PACKET_SIZE); i++)

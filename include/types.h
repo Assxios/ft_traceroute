@@ -13,6 +13,7 @@ typedef struct
 
 	unsigned int first_ttl;
 	unsigned int max_ttl;
+	unsigned int port;
 	unsigned char nprobes;
 	unsigned char packetlen;
 

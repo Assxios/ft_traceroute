@@ -11,7 +11,7 @@
 void print_help()
 {
 	// usage
-	printf("Usage\n  %s [ -46dIn ] [ -f first_ttl ] [ -m max_ttl ] [ -q nqueries ] host\n\n", g_data.cmd);
+	printf("Usage\n  %s [ -46dIn ] [ -f first_ttl ] [ -m max_ttl ] [ -p port ] [ -q nqueries ] host [ packetlen ]\n\n", g_data.cmd);
 
 	// options
 	printf("Options:\n");
@@ -22,13 +22,17 @@ void print_help()
 	printf("  -I                          Use ICMP ECHO for tracerouting\n");
 	printf("  -m max_ttl                  Set the max number of hops (max TTL to be reached). Default is 30\n");
 	printf("  -n                          Do not resolve IP addresses to their domain names\n");
+	printf("  -p port                     Set the destination port to use. It is either initial udp port value for \"default\" \n \
+                             method (incremented by each probe, default is 33434), or initial seq for \"icmp\"\n \
+                             (incremented as well, default from 1)\n");
 	printf("  -q nqueries                 Set the number of probes per each hop. Default is 3\n");
 	printf("  --help                      Read this help and exit\n\n");
 	
 	// arguments
 	printf("Arguments:\n");
 	printf("+     host          The host to traceroute to\n");
-	printf("      packetlen     The full packet length (default is the length of an header plus 40). Can be ignored or increased to a minimal allowed value\n\n");
+	printf("      packetlen     The full packet length (default is the length of an header plus 40). Can be ignored or\n \
+	            increased to a minimal allowed value\n\n");
 
 	//bg
 	printf("Made with ♥ by hallainea and Assxios\n");
@@ -82,6 +86,9 @@ void options(char ***av)
 		case 'n':
 			g_data.options.resolve = true;
 			break;
+		case 'p':
+			g_data.options.port = get_number(av, 1, USHRT_MAX, true);
+			return;
 		case 'q':
 			g_data.options.nprobes = get_number(av, 1, 10, true);
 			return;
