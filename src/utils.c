@@ -18,12 +18,13 @@ int is_digit(char *str)
 
 unsigned short checksum(unsigned short *addr, size_t len)
 {
-	unsigned int sum = 0;
+	unsigned long sum = 0;
 	for (; len > sizeof(char); len -= sizeof(short))
 		sum += *addr++;
 	if (len == sizeof(char))
 		sum += *(unsigned char *)addr;
-	while (sum >> sizeof(short) * 8)
-		sum = (sum & 0xffff) + (sum >> sizeof(short) * 8);
+	unsigned char bits = sizeof(short) * 8;
+	while (sum >> bits)
+		sum = (sum & ((1 << bits) - 1)) + (sum >> bits);
 	return (~sum);
 }
