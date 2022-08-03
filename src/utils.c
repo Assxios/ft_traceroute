@@ -16,10 +16,14 @@ int is_digit(char *str)
 	return !*str;
 }
 
-unsigned short checksum(unsigned short *address, size_t len)
+unsigned short checksum(unsigned short *addr, size_t len)
 {
-	unsigned short sum = 0;
-	while (len -= sizeof(short))
-		sum += *address++;
+	unsigned int sum = 0;
+	for (; len > sizeof(char); len -= sizeof(short))
+		sum += *addr++;
+	if (len == sizeof(char))
+		sum += *(unsigned char *)addr;
+	while (sum >> sizeof(short) * 8)
+		sum = (sum & 0xffff) + (sum >> sizeof(short) * 8);
 	return (~sum);
 }

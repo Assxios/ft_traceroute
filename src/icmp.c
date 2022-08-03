@@ -55,9 +55,7 @@ int check_packet_icmp(char *data)
 		icmp->un.echo = icmp_sent->un.echo;
 	}
 
-	if (icmp->un.echo.id != g_data.icmp.un.echo.id)
-		return -1;
-	if (icmp->un.echo.sequence != g_data.icmp.un.echo.sequence)
+	if (ntohs(icmp->un.echo.id) != getpid() || ntohs(icmp->un.echo.sequence) != g_data.sequence)
 		return -1;
 
 	if (icmp->type == ICMP_TIME_EXCEEDED || icmp->type == ICMP6_TIME_EXCEEDED)
@@ -91,7 +89,7 @@ int check_packet(char *data)
 			return -1;
 	}
 
-	if (ntohs(udp->uh_dport) != g_data.port)
+	if (ntohs(udp->uh_dport) != g_data.sequence)
 		return -1;
 
 	static unsigned short source_port = 0;

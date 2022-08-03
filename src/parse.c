@@ -27,15 +27,15 @@ void print_help()
                              (incremented as well, default from 1)\n");
 	printf("  -q nqueries                 Set the number of probes per each hop. Default is 3\n");
 	printf("  --help                      Read this help and exit\n\n");
-	
+
 	// arguments
 	printf("Arguments:\n");
 	printf("+     host          The host to traceroute to\n");
 	printf("      packetlen     The full packet length (default is the length of an header plus 40). Can be ignored or\n \
 	            increased to a minimal allowed value\n\n");
 
-	//bg
-	printf("Made with ♥ by hallainea and Assxios\n");
+	// bg
+	printf("Made with ♥ by execrate0 and Assxios\n");
 	exit(0);
 }
 
@@ -123,13 +123,17 @@ void resolve_flags(char **argv)
 		error("usage error", "Temporary failure in name resolution");
 	if (*(argv + 1))
 	{
-		g_data.options.packetlen = get_number(&argv, 0, USHRT_MAX, false);
-		if (*(argv + 1))
+		if (*(argv + 2))
 			error("usage error", "Extranous argument found");
+
+		g_data.options.datalen = get_number(&argv, 0, USHRT_MAX, false);
+
+		if (g_data.options.datalen < DEFAULT_PACKET_SIZE)
+			g_data.options.datalen = DEFAULT_PACKET_SIZE;
+		g_data.options.datalen -= DEFAULT_PACKET_SIZE;
 	}
 
 	char ip_str[INET6_ADDRSTRLEN];
 	g_data.server_addr.sa.sa_family == AF_INET ? inet_ntop(AF_INET, &g_data.server_addr.sin.sin_addr, ip_str, INET_ADDRSTRLEN) : inet_ntop(AF_INET6, &g_data.server_addr.sin6.sin6_addr, ip_str, INET6_ADDRSTRLEN);
-	printf("traceroute to %s (%s), %d hops max, %d byte packets\n", g_data.options.packetlen ? *(argv - 1) : *argv, ip_str, g_data.options.max_ttl, g_data.options.packetlen < DEFAULT_PACKET_SIZE ? DEFAULT_PACKET_SIZE : g_data.options.packetlen);
-
+	printf("traceroute to %s (%s), %d hops max, %d byte packets\n", *argv, ip_str, g_data.options.max_ttl, DEFAULT_PACKET_SIZE + g_data.options.datalen);
 }

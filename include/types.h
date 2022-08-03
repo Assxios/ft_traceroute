@@ -15,7 +15,7 @@ typedef struct
 	unsigned int max_ttl;
 	unsigned int port;
 	unsigned char nprobes;
-	unsigned char packetlen;
+	unsigned short datalen;
 
 	bool debug;
 	bool icmp;
@@ -34,13 +34,12 @@ typedef struct
 {
 	char *cmd;
 	t_addr server_addr;
-	unsigned short port;
+	unsigned short sequence;
 
 	int send_sock;
 	int recv_sock;
 
 	t_options options;
-	struct icmphdr icmp;
 } t_data;
 
 extern t_data g_data;
