@@ -21,15 +21,17 @@ int resolve_addr(char *host)
 
 void generate_socket()
 {
-	if (!g_data.options.icmp)
-		g_data.send_sock = socket(g_data.server_addr.sa.sa_family, SOCK_DGRAM, 0);
 	g_data.recv_sock = socket(g_data.server_addr.sa.sa_family, SOCK_RAW, g_data.server_addr.sa.sa_family == AF_INET ? IPPROTO_ICMP : IPPROTO_ICMPV6);
-	if ((!g_data.options.icmp && g_data.send_sock < 0) || (g_data.recv_sock < 0))
+	if (g_data.options.icmp)
+		g_data.send_sock = g_data.recv_sock;
+	else
+		g_data.send_sock = socket(g_data.server_addr.sa.sa_family, SOCK_DGRAM, 0);
+
+	if (g_data.send_sock < 0 || g_data.recv_sock < 0)
 		error("socket", strerror(errno));
 
 	struct timeval tv = {1, 0};
-	if (setsockopt(g_data.recv_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
-		error("setsockopt", strerror(errno));
+	setsockopt(g_data.recv_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 ? error("setsockopt", strerror(errno)) : 0;
 
 	int on = 1;
 	if (g_data.server_addr.sa.sa_family != AF_INET && setsockopt(g_data.recv_sock, SOL_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) < 0)
@@ -40,7 +42,6 @@ void generate_socket()
 		if (!g_data.options.icmp)
 			setsockopt(g_data.send_sock, SOL_SOCKET, SO_DEBUG, &on, sizeof(on)) < 0 ? error("setsockopt", strerror(errno)) : 0;
 		setsockopt(g_data.recv_sock, SOL_SOCKET, SO_DEBUG, &on, sizeof(on)) < 0 ? error("setsockopt", strerror(errno)) : 0;
-
 	}
 }
 
