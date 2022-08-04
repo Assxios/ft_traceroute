@@ -11,6 +11,8 @@ void error(char *msg, char *detail)
 
 int is_digit(char *str)
 {
+	if (!str)
+		return 0;
 	while ((*str >= '0' && *str <= '9'))
 		str++;
 	return !*str;

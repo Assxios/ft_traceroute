@@ -39,17 +39,17 @@ void print_help()
 	exit(0);
 }
 
-size_t get_number(char ***av, size_t min, size_t max, bool option)
+size_t get_number(char ***av, size_t min, size_t max, bool option_check)
 {
 	char buffer[1 << 10];
 
-	if (option && *(**av + 1) != '\0')
+	if (option_check && *(**av + 1) != '\0')
 	{
 		sprintf(buffer, "Invalid option -%s", **av);
 		error("usage error", buffer);
 	}
 
-	if (!*++*av || !is_digit(**av))
+	if (!is_digit(*++*av))
 	{
 		sprintf(buffer, "Invalid argument '%s'", **av);
 		error("usage error", buffer);
@@ -90,7 +90,7 @@ void options(char ***av)
 			g_data.options.max_ttl = get_number(av, 1, UCHAR_MAX, true);
 			return;
 		case 'n':
-			g_data.options.resolve = true;
+			g_data.options.resolve = false;
 			break;
 		case 'p':
 			g_data.options.port = get_number(av, 1, USHRT_MAX, true);
@@ -127,6 +127,7 @@ void resolve_flags(char **argv)
 			error("usage error", "Extranous argument found");
 
 		g_data.options.datalen = get_number(&argv, 0, USHRT_MAX, false);
+		argv--;
 
 		if (g_data.options.datalen < DEFAULT_PACKET_SIZE)
 			g_data.options.datalen = DEFAULT_PACKET_SIZE;

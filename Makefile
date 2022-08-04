@@ -19,7 +19,7 @@ COMPILER_FLAGS	=	-I$(INCLUDE_FOLDER)
 COMPILER_FLAGS	+=	-Wall -Wextra -Werror -Wno-implicit-fallthrough
 COMPILER_FLAGS	+=	-g3
 
-FLAGS			=	google.com 40
+FLAGS			=	google.com
 
 all: $(NAME)
 
