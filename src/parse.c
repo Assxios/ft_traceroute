@@ -15,8 +15,8 @@ void print_help()
 
 	// options
 	printf("Options:\n");
-	printf("  -4                          use IPv4\n");
-	printf("  -6                          use IPv6\n");
+	printf("  -4                          Use IPv4\n");
+	printf("  -6                          Use IPv6\n");
 	printf("  -d                          Enable socket level debugging\n");
 	printf("  -f first_ttl                Start from the first_ttl hop (instead from 1)\n");
 	printf("  -I                          Use ICMP ECHO for tracerouting\n");
